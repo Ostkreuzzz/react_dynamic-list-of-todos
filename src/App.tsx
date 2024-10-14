@@ -9,12 +9,34 @@ import { TodoModal } from './components/TodoModal';
 import { Loader } from './components/Loader';
 
 import { FILTER_STATUS } from './utils/FILTER_STATUS';
-import { getActive } from './services/todo';
-import { getCompleted } from './services/todo';
-import { getAllTodos } from './services/todo';
-import { handleQuery } from './utils/handleQuery';
+import { getTodos } from './api';
 
 import { Todo } from './types/Todo';
+
+function handleFiltration(data: Todo[], query: string, filterBy: string) {
+  let visibleData = [...data];
+
+  if (filterBy) {
+    switch (filterBy) {
+      case FILTER_STATUS.ACTIVE:
+        visibleData = [...data].filter(todo => !todo.completed);
+        break;
+      case FILTER_STATUS.COMPLETED:
+        visibleData = [...data].filter(todo => todo.completed);
+        break;
+    }
+  }
+
+  if (query) {
+    visibleData = visibleData.filter(todo => {
+      const normalizedQuery = query.trim().toLowerCase();
+
+      return todo.title.trim().toLowerCase().includes(normalizedQuery);
+    });
+  }
+
+  return visibleData;
+}
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -24,29 +46,13 @@ export const App: React.FC = () => {
   const [currentTodo, setCurrentTodo] = useState<Todo | null>(null);
 
   useEffect(() => {
-    switch (filterBy) {
-      case FILTER_STATUS.ALL:
-        setIsLoading(true);
+    setIsLoading(true);
+    getTodos()
+      .then(setTodos)
+      .finally(() => setIsLoading(false));
+  }, []);
 
-        getAllTodos()
-          .then(result => setTodos(handleQuery(result, query)))
-          .finally(() => setIsLoading(false));
-        break;
-      case FILTER_STATUS.ACTIVE:
-        setIsLoading(true);
-        getActive()
-          .then(result => setTodos(handleQuery(result, query)))
-          .finally(() => setIsLoading(false));
-        break;
-      case FILTER_STATUS.COMPLETED:
-        setIsLoading(true);
-
-        getCompleted()
-          .then(result => setTodos(handleQuery(result, query)))
-          .finally(() => setIsLoading(false));
-        break;
-    }
-  }, [filterBy, query]);
+  const visibleData = handleFiltration(todos, query, filterBy);
 
   return (
     <>
@@ -68,9 +74,9 @@ export const App: React.FC = () => {
               {isLoading && <Loader />}
 
               <TodoList
-                todos={todos}
+                todos={visibleData}
                 onCurrentTodo={setCurrentTodo}
-                currentTodo={currentTodo}
+                currentTodo={currentTodo || null}
               />
             </div>
           </div>

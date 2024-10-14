@@ -3,7 +3,7 @@ import { Loader } from '../Loader';
 import { User } from '../../types/User';
 
 import { Todo } from '../../types/Todo';
-import { getUser } from '../../services/user';
+import { getUser } from '../../api';
 
 type Props = {
   currentTodo: Todo;
